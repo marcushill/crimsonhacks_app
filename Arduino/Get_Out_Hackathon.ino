@@ -1,9 +1,9 @@
-
 #include <CurieBLE.h>
 
 #define BUTTON_PIN 2
 #define SWITCH_PIN 4
 #define TIMER_LENGTH 4000
+#define TEXT_TIMER_LENGTH 300
 
 BLEPeripheral blePeripheral;  // BLE Peripheral Device (the board you're programming)
 BLEService helpService("8ce255c0-200a-11e0-ac64-0800200c9a66");
@@ -12,6 +12,7 @@ BLEService helpService("8ce255c0-200a-11e0-ac64-0800200c9a66");
 BLEUnsignedCharCharacteristic switchCharacteristic("8ce255c0-200a-11e0-ac64-0800200c9a66", BLERead | BLEWrite | BLENotify);
 
 unsigned long timer = 0;
+unsigned long textTimer = 0;
 
 void setup() {
     Serial.begin(9600);                         // begin Serial session
@@ -38,7 +39,7 @@ void setup() {
 void loop() {
     
     BLECentral central = blePeripheral.central();
-
+    
     // if a central is connected to peripheral:
      if (central) {
         Serial.print("Connected to central: ");
@@ -65,15 +66,28 @@ void loop() {
             if ((numPushes == 1) && !timer){
                 Serial.println("Timer started");
                 timer = millis() + TIMER_LENGTH;
+                textTimer = millis() + TEXT_TIMER_LENGTH ;
                 if (!mode)
                     switchCharacteristic.setValue(0xA1);
                 else
                     switchCharacteristic.setValue(0xB1); 
+            }
+            else if ((millis() <= textTimer) && (numPushes == 2)){
+                timer = 0;
+                textTimer = 0;
+                numPushes = 0;
+                if (mode){
+                    Serial.println("Text sent");
+                    switchCharacteristic.setValue(0xB3);
+                    delay(500);
+                    switchCharacteristic.setValue(0xB0);
+                }
             }  
             else if ((millis() <= timer) && (numPushes == 2)){
                 Serial.println("Timer reset to zero");
                 timer = 0;
                 numPushes = 0;
+                textTimer = 0;
                 if (!mode)
                     switchCharacteristic.setValue(0xA0);
                 else
@@ -82,6 +96,7 @@ void loop() {
             else if ((millis() > timer) && (numPushes == 1) && timer){
                 Serial.println("Timer expired");
                 timer = 0;
+                textTimer = 0;
                 numPushes = 0;
                 if (!mode)
                     switchCharacteristic.setValue(0xA2);
