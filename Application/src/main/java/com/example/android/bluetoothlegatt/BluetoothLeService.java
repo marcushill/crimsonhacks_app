@@ -46,6 +46,8 @@ public class BluetoothLeService extends Service {
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress;
     private BluetoothGatt mBluetoothGatt;
+    private BluetoothGattService mBluetoothService;
+    private BluetoothGattCharacteristic mBluetoothCharacteristic;
     private int mConnectionState = STATE_DISCONNECTED;
 
     private static final int STATE_DISCONNECTED = 0;
@@ -80,6 +82,9 @@ public class BluetoothLeService extends Service {
                 // Attempts to discover services after successful connection.
                 Log.i(TAG, "Attempting to start service discovery:" +
                         mBluetoothGatt.discoverServices());
+                mBluetoothService = mBluetoothGatt.getService(UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66"));
+                mBluetoothCharacteristic = mBluetoothService.getCharacteristic(UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66"));
+
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
