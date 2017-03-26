@@ -25,6 +25,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.location.Location;
+import android.location.LocationManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.media.ToneGenerator;
@@ -160,7 +162,7 @@ public class DeviceControlActivity extends Activity {
 
     private void clearUI() {
         mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
-        //mDataField.setText(R.string.no_data);
+        mDataField.setText(R.string.no_data);
     }
 
     @Override
@@ -256,12 +258,34 @@ public class DeviceControlActivity extends Activity {
             //Uri ringtone = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             //Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), ringtone);
             ringtone.play();
-        } else if (data.contains("B3")) {
-            SmsManager smsManager = SmsManager.getDefault();
-            smsManager.sendTextMessage("18503760623", null, "call me please!", null, null);
+            mDataField.setText("Ringing Mode");
+        }
+        else if (data.contains("A0")) {
+            mDataField.setText("Standby..");
+        }
+        else if (data.contains("B0")) {
+            mDataField.setText("Standby..");
+        }
+        else if (data.contains("A1") || data.contains("B1")) {
+            mDataField.setText("Timer Running");
         }
 
+        else if (data.contains("B3")) {
+            LocationManager locationManager = (LocationManager)this.getSystemService(LOCATION_SERVICE);
+            Location currentLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            SmsManager smsManager = SmsManager.getDefault();
+            StringBuffer smsBody = new StringBuffer();
+            smsBody.append("http://maps.google.com?q=");
+            smsBody.append(currentLocation.getLatitude());
+            smsBody.append(",");
+            smsBody.append(currentLocation.getLongitude());
+            smsBody.append("Call me please!");
+            smsManager.sendTextMessage("18503760623", null, smsBody.toString(), null, null);
+
+            mDataField.setText("Text Message sent!");
+        }
         else if (data.contains("B2")) {
+            mDataField.setText("Calling...");
             Intent intent = new Intent(Intent.ACTION_CALL);
             intent.setData(Uri.parse("tel:18503760623"));
             getApplicationContext().startActivity(intent);
@@ -271,9 +295,9 @@ public class DeviceControlActivity extends Activity {
         }
 
         // Refresh visual data
-        if (data != null) {
-            mDataField.setText(data);
-        }
+//        if (data != null) {
+//            mDataField.setText(data);
+//        }
     }
 
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.
