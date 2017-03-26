@@ -31,6 +31,7 @@ import android.media.ToneGenerator;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -255,7 +256,12 @@ public class DeviceControlActivity extends Activity {
             //Uri ringtone = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             //Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), ringtone);
             ringtone.play();
-        } else if (data.contains("B2")) {
+        } else if (data.contains("B3")) {
+            SmsManager smsManager = SmsManager.getDefault();
+            smsManager.sendTextMessage("18503760623", null, "call me please!", null, null);
+        }
+
+        else if (data.contains("B2")) {
             Intent intent = new Intent(Intent.ACTION_CALL);
             intent.setData(Uri.parse("tel:18503760623"));
             getApplicationContext().startActivity(intent);
