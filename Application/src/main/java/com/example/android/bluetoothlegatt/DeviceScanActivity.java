@@ -23,6 +23,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -76,6 +77,19 @@ public class DeviceScanActivity extends ListActivity {
             finish();
             return;
         }
+
+            SharedPreferences devicePreferences = getSharedPreferences("DEVICE_PREFERENCES", MODE_PRIVATE);
+
+                String deviceName = devicePreferences.getString("DEVICE_NAME", null);//"No name defined" is the default value.
+                String deviceAdress = devicePreferences.getString("DEVICE_ADRESS", null); //0 is the default value.
+
+                if(deviceName != null && deviceAdress !=null) {
+                    final Intent intent = new Intent(this, DeviceControlActivity.class);
+                    intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, deviceName);
+                    intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, deviceAdress);
+                    startActivity(intent);
+                }
+
     }
 
     @Override
@@ -151,6 +165,13 @@ public class DeviceScanActivity extends ListActivity {
         final Intent intent = new Intent(this, DeviceControlActivity.class);
         intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device.getName());
         intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+
+        // DEVICE_PREFERENCES - a static String variable like:
+        SharedPreferences.Editor editor = getSharedPreferences("DEVICE_PREFERENCES", MODE_PRIVATE).edit();
+        editor.putString("DEVICE_NAME", device.getName());
+        editor.putString("DEVICE_ADRESS", device.getAddress());
+        editor.commit();
+
         if (mScanning) {
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
             mScanning = false;

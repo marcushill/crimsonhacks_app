@@ -46,6 +46,9 @@ public class BluetoothLeService extends Service {
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress;
     private BluetoothGatt mBluetoothGatt;
+    private BluetoothGattService mBluetoothService;
+    private BluetoothGattCharacteristic mBluetoothCharacteristic;
+    private BluetoothGattCharacteristic mNotifyCharacteristic;
     private int mConnectionState = STATE_DISCONNECTED;
 
     private static final int STATE_DISCONNECTED = 0;
@@ -92,7 +95,28 @@ public class BluetoothLeService extends Service {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
+                List<BluetoothGattService> s = getSupportedGattServices();
+                mBluetoothService = mBluetoothGatt.getService(UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66"));
+                mBluetoothCharacteristic = mBluetoothService.getCharacteristic(UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66"));
+
+                final int charaProp = mBluetoothCharacteristic.getProperties();
+                if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
+                    // If there is an active notification on a characteristic, clear
+                    // it first so it doesn't update the data field on the user interface.
+                    if (mNotifyCharacteristic != null) {
+                        setCharacteristicNotification(
+                                mNotifyCharacteristic, false);
+                        mNotifyCharacteristic = null;
+                    }
+                    readCharacteristic(mBluetoothCharacteristic);
+                }
+                if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    mNotifyCharacteristic = mBluetoothCharacteristic;
+                    setCharacteristicNotification(
+                            mBluetoothCharacteristic, true);
+                }
+                //broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
+                //broadcastUpdate(ACTION_DATA_AVAILABLE, mBluetoothCharacteristic);
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status);
             }
@@ -294,15 +318,15 @@ public class BluetoothLeService extends Service {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return;
         }
+
         mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
 
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
+                UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
+        descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        mBluetoothGatt.writeDescriptor(descriptor);
 
-            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
-                    UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
-            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-            mBluetoothGatt.writeDescriptor(descriptor);
-
-    };
+    }
 
     /**
      * Retrieves a list of supported GATT services on the connected device. This should be
